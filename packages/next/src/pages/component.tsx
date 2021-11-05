@@ -1,7 +1,7 @@
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import { styled, Button } from '@mui/material';
-import styledSc from 'styled-components';
+import styledEmo from '@emotion/styled';
 
 const Container = styled("div")`
   min-height: 100vh;
@@ -18,7 +18,7 @@ const OverstyledButton = styled(Button)`
   background-color: paleturquoise;
 `
 
-const StyledComponentsButton = styledSc.button`
+const EmotionButton = styledEmo.button`
   color: hotpink;
   background-color: paleturquoise;
 `
@@ -34,7 +34,7 @@ const Home: NextPage = () => {
 
       <OverstyledButton>Some Button</OverstyledButton>
       <br/>
-      <StyledComponentsButton>styled-components Button</StyledComponentsButton>
+      <EmotionButton>styled-components Button</EmotionButton>
     </Container>
   );
 };

@@ -1,8 +1,9 @@
 import React from 'react';
 // eslint-disable-next-line @next/next/no-document-import-in-page
 import Document, { Html, Head, Main, NextScript } from 'next/document';
-import { ServerStyleSheet } from 'styled-components';
+import createEmotionServer from '@emotion/server/create-instance';
 import theme from '../../styles/theme';
+import { createEmotionCache } from '../../styles/createEmotionCache';
 
 // https://material-ui.com/styles/advanced/#next-js
 export default class MyDocument extends Document {
@@ -32,26 +33,35 @@ export default class MyDocument extends Document {
 
 // https://github.com/vercel/next.js/blob/master/examples/with-styled-components/pages/_document.js
 MyDocument.getInitialProps = async (ctx) => {
-  const sheet = new ServerStyleSheet();
   const originalRenderPage = ctx.renderPage;
 
-  try {
-    ctx.renderPage = () =>
-      originalRenderPage({
-        enhanceApp: (App) => (props) => sheet.collectStyles(<App {...props} />),
-      });
+  const cache = createEmotionCache();
+  const { extractCriticalToChunks } = createEmotionServer(cache);
 
-    const initialProps = await Document.getInitialProps(ctx);
-    return {
-      ...initialProps,
-      styles: (
-        <React.Fragment>
-          {initialProps.styles}
-          {sheet.getStyleElement()}
-        </React.Fragment>
-      ),
-    };
-  } finally {
-    sheet.seal();
-  }
+  ctx.renderPage = () =>
+    originalRenderPage({
+      // eslint-disable-next-line react/display-name
+      enhanceApp: (App: any) => (props) =>
+        <App emotionCache={cache} {...props} />,
+    });
+
+  const initialProps = await Document.getInitialProps(ctx);
+  const emotionStyles = extractCriticalToChunks(initialProps.html);
+  const emotionStyleTags = emotionStyles.styles.map((style) => (
+    <style
+      data-emotion={`${style.key} ${style.ids.join(' ')}`}
+      key={style.key}
+      // eslint-disable-next-line react/no-danger
+      dangerouslySetInnerHTML={{ __html: style.css }}
+    />
+  ));
+
+  return {
+    ...initialProps,
+    // Styles fragment is rendered after the app and page rendering finish.
+    styles: [
+      ...React.Children.toArray(initialProps.styles),
+      ...emotionStyleTags,
+    ],
+  };
 };
